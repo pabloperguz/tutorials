@@ -2,7 +2,7 @@
 title: "Basics of MCMC simulation"
 author: "Pablo Perez"
 date: "18/10/2020"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include = FALSE}
@@ -88,7 +88,7 @@ abline(reg=y.lm, lty=3, col="red")
 ```
 
 
-## Excercise 
+## Excercise 1
 
 Write a for loop that does the above simulation 200 times and plot the regression line for each (use type="n" to supress the points)
 
@@ -105,5 +105,5 @@ for (i in 1:N) {
 
 ```
 
-
+## Generating confidence intervals
 

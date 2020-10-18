@@ -2,7 +2,7 @@
 title: "Building a basic chain-SIR model"
 author: "Pablo Perez"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: word_document
+output: html_document
 ---
 
 A chain-SIR model can simulate S→I→R flows with 'realistic'
