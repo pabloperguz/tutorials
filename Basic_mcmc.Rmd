@@ -1,0 +1,109 @@
+---
+title: "Basics of MCMC simulation"
+author: "Pablo Perez"
+date: "18/10/2020"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r, echo = FALSE}
+# set random seed
+set.seed(1)
+
+# load packages
+library()
+```
+
+## Simulating normally distributed data
+
+There are different ways of simulating datasets. The following examples simulate a simple dataset from a normal distribution with mean = 5 and sd = 2. The plots below show individual datapoints simulated and their distribution. Whilst they are very close to the distribution from which they're originating (red line), there is stochastic variation in the modelled data. The SD of the simulated means thus reflect the spread of the means, which is very close to the theoretical expected standard error `2/sqrt(100)`. 
+
+``` {r}
+
+norm.data <- rnorm(n=1000,mean=5,sd=2)
+par(mfrow=c(1,2))
+plot(norm.data)
+hist(norm.data,freq=F)
+curve(dnorm(x,mean=4,sd=2),from=0,to=10,add=T,col="red")
+
+norm.data.2 <- replicate(n=4, rnorm(n=1000, mean=5, sd=2))
+par(mfrow=c(2,2))
+apply(X = norm.data.2, MARGIN = 2, FUN = hist)
+apply(X = norm.data.2, MARGIN = 2, FUN = mean)
+apply(X = norm.data.2, MARGIN = 2, FUN = sd)
+sd(apply(X = norm.data.2, MARGIN = 2, FUN = mean))
+2/sqrt(1000)
+
+```
+
+A `for` loop can be more efficient when simulating a large number of iterations or large datasets. In this example, 2,000 iterations of normally distributed datasets are created. The histogram shows the spread of the means. 
+
+```{r}
+N = 2000
+simulated.means <- rep(NA, N)
+
+for (i in 1:N) {
+  sim.dat <- rnorm(n=1000, mean=5, sd=2)
+  simulated.means[i] <- mean(sim.dat)
+  rm(sim.dat)
+}
+
+hist(simulated.means)
+sd(simulated.means)
+
+```
+
+## Simulating a numeric variable (linear regression)
+
+This next example models a dataset from the intercept and slope of a theoretical (`y_fixex`) regression line of the form `a + b*x`. 
+
+```{r}
+
+a <- 5
+b <- 0.7
+x <- seq(2,20)
+y_fixed <- a + b*x
+
+# Fixed relation
+par(mfrow=c(2,1))
+plot(y_fixed~x,)
+
+# Simulation (sd incorporates random variation)
+y.sim.1 <- rnorm(length(x), mean=y_fixed, sd=2.5)
+plot(y.sim.1~x)
+abline(a=a, b=b, lwd=2)
+
+# Linear regression
+y.lm <- lm(y.sim.1~x)
+summary(y.lm)
+confint(y.lm)
+abline(reg=y.lm, lty=3, col="red")
+```
+
+
+## Excercise 
+
+Write a for loop that does the above simulation 200 times and plot the regression line for each (use type="n" to supress the points)
+
+
+```{r}
+N <- 200
+plot(y.sim.1~x,type="n")
+for (i in 1:N) {
+  sim.dat <- rnorm(length(x), mean=y_fixed, sd=2.5)
+  sim.lm <- lm(sim.dat~x)
+  abline(reg=sim.lm, lty=2, lwd=0.5, col="red")
+  rm(sim.dat,sim.lm)
+}
+
+```
+
+
+
