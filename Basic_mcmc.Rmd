@@ -107,3 +107,134 @@ for (i in 1:N) {
 
 ## Generating confidence intervals
 
+This example simulates data of known response and co-variate variable values. 
+
+```{r}
+
+x <- -10:10 # co-variate
+b0 <- 0
+b1 <- 1.5 # slope
+
+# vector of 'observed' values for the response variable
+y.sim <- rnorm(length(x), b0 + b1*x, 10)
+
+plot(y.sim~x)
+lm.y <- lm(y.sim~x)
+coef(lm.y)
+confint(lm.y)
+
+vcov(lm.y)
+summary(lm.y)
+
+abline(lm.y,lwd=2)
+
+```
+
+The asymptotic normal confidence intervals are what would be constructed based on the SE and t-distribution. For an observed dataset, this can be calculated using the `predict` function.
+
+```{r}
+
+x.frame <- data.frame(x=x)
+
+conf.int <- predict(lm.y, interval="conf", newdata = x.frame)
+
+plot(y.sim~x)
+abline(lm.y,lwd=2)
+matlines(x=x.frame$x, y = conf.int, lty = c(1,2,2), col="red")
+
+```
+
+## Monte Carlo simulation
+
+The following function will run an MC simulation, not accounting for uncertainty around residual variation. It simulates a linear model with intercept `a`, slope `b` and standard deviation `rse`. It then performs linear regression and extracts confidence co-efficients. The confidence intervals will be narrow. *Why?*. 
+
+```{r}
+
+SimReg1 <- function(mod.input = lm.y) {
+  a = coef(mod.input)[1]
+  b = coef(mod.input)[2]
+  rse = summary(mod.input)$sigma
+  
+  y <- rnorm(n = length(x), mean = a + b*x, sd = rse) # simulated responses
+  lm.sim <- lm(y~x) # fitted model
+  coef(lm.sim)
+}
+
+N <- 1000 # number of simulations
+simulated.coef <- replicate(N, SimReg1()) # run the simulation
+
+simulated.coef <- t(simulated.coef) # transpose output for convenience
+
+sd(simulated.coef[,1]) # this should approximate the SE for the intercept
+sd(simulated.coef[,2]) # this should approximate the SE for the slope
+
+# compare to 
+summary(lm.y)$coef[,1:2]
+
+# MC confidence intervals for the slope
+quantile(simulated.coef[,2], c(0.025,0.975))
+
+# compare to
+confint(lm.y)[2,]
+
+# check for correlation between the estimates (slopes and intercepts)
+cor(simulated.coef[,1], simulated.coef[,2])
+plot(simulated.coef[,1],simulated.coef[,2])
+
+# Plot of confidence bands asymptotic vs MC
+
+plot(y.sim~x) # scatter plot
+
+for (i in 1:95) { # first 95 values from MC simulation
+  curve(simulated.coef[i,1] + simulated.coef[i,2] * x, add=T, col="grey")
+}
+matlines(x=x.frame$x, y = conf.int, lty = c(1,2,2), col="red") # asymptotic normal CIs
+
+```
+
+## Accounting for uncertainty in RSE
+
+The above CIs generaterd by the MC simulation are narrow, as they do not account for uncertainty on RSE. The following simulation corrects for this, as RSE represents a *random* sample from another distribution. This correction thus propagates error by sampling from RSE and then sampling values conditional on that. 
+
+```{r}
+
+SimReg2 <- function(mod.input = lm.y) {
+  a = coef(mod.input)[1]
+  b = coef(mod.input)[2]
+  df.sim <- mod.input$df
+  rse = summary(mod.input)$sigma
+  rse.sim <- rse*sqrt(df.sim/rchisq(1, df=df.sim)) # incorporate uncertainty
+  
+  y <- rnorm(n = length(x), mean = a + b*x, sd = rse.sim) # simulated responses
+  lm.sim <- lm(y~x) # fitted model
+  coef(lm.sim)
+}
+
+simulated.coef.corrected <- replicate(N, SimReg2()) # run the simulation
+simulated.coef.corrected <- t(simulated.coef.corrected) # transpose output for convenience
+
+# Previous plot
+plot(y.sim~x) # scatter plot
+for (i in 1:95) { # first 95 values from MC simulation
+  curve(simulated.coef[i,1] + simulated.coef[i,2] * x, add=T, col="grey")}
+matlines(x=x.frame$x, y = conf.int, lty = c(1,2,2), col="red") # asymptotic normal CIs
+
+# Add correction to plot
+for (i in 1:95) {
+  curve(simulated.coef.corrected[i,1] + simulated.coef.corrected[i,2] * x,
+        add=T, col="blue", lwd=0.8)
+}
+
+# Compare CIs with previous model and simulated data
+quantile(simulated.coef.corrected[,2], c(0.025,0.975))
+quantile(simulated.coef[,2], c(0.025,0.975))
+confint(lm.y)[2,]
+
+```
+
+
+
+
+
+
+
