@@ -232,7 +232,30 @@ confint(lm.y)[2,]
 
 ```
 
+Note the example above is not yet accounting for co-variation in parameter estimates. The next bit of code uses a `for` loop instead of the `replicate` function to arrive at the same results. 
 
+```{r}
+
+monte.carlo.estimates <- matrix(NA, ncol=2, nrow=N)
+
+for (i in 1:N) {
+  monte.carlo.estimates[i,] <- SimReg2()
+}
+
+hist(monte.carlo.estimates[,2])
+
+require(arm)
+model.sim <- sim(lm.y, n.sims=N)
+sim.slopes <- model.sim@coef[,2]
+quantile(sim.slopes, c(0.025,0.975))
+confint(lm.y)
+
+plot(y.sim~x)
+for (i in 1:95) {
+  curve(model.sim@coef[i,1] + model.sim@coef[i,2] * x, add=T, col="red")
+}
+
+```
 
 
 
