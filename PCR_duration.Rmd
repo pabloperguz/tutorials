@@ -1,0 +1,85 @@
+---
+title: "RT-PCR positivity duration"
+author: "Pablo Perez"
+date: "19/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+packages <- c("VGAM","ggplot2","rriskDistributions")
+lapply(packages, require, character.only = TRUE)
+df <- read.csv("omar_data.csv")
+```
+
+In [Eurosurveillance 2020 Jul 30; 25(30): 2001292](https://dx.doi.org/10.2807/1560-7917.ES.2020.25.30.2001292), Omar et al. analysed data of consecutive RT-qPCR results in 537 symptomatic patients with mild COVID-19 in home quarantine, between 28 February to 6 June 2020 in Rhineland-Palatinate, Germany. Table 1 presents their reported data on the population with an RT-qPCR positive for SARS-CoV-2 RNA at mean (95%CI) days after symptom onset.
+
+# Table 1. Cumulative population proportions
+
+```{r, echo=TRUE}
+df[,2:4]
+```
+
+## Simulated study population
+For 1000 times, at each iteration of time `t`, sample `n` random numbers from a normal distribution with mean = `mu` and sd = `sigma`, which replicates the upper and lower bounds of observed time.
+
+```{r, include = FALSE}
+N <- 1000
+dist.data <- matrix(nrow=N,ncol=2)
+
+for (i in 1:N) {
+  while (TRUE) {
+    edata <- NULL
+    for (t in 1:12) {
+      
+      n <- df$n[t]
+      out <- data.frame(x = rnorm(n, mean=df$mu[t], sd=df$sigma[t]))
+      edata <- rbind(edata,out)
+    }
+    
+    fit <- try(fitdistrplus::fitdist(edata$x,"gamma",lower=c(0,0),method = "mle",
+                                     start = list(scale=0.1,shape=0.1)),silent=T)
+    if(!is(fit, 'try-error')) break
+  }
+  dist.data[i,1] <- fit$estimate[1]
+  dist.data[i,2] <- fit$estimate[2]
+  rm(edata)
+}
+edata <- data.frame(y = rgamma(1000, shape=mean(dist.data[,2]), rate=1/mean(dist.data[,1])))
+```
+
+This random draw averages parameters for a gamma distribution across 1,000 simulated populations, which approximates the distribution from Omar et al. 
+
+```{r, echo=FALSE}
+print(c("Shape = ",mean(dist.data[,2])))
+print(c("Scale = ",mean(dist.data[,1])))
+print(c("Rate = ",1/mean(dist.data[,1])))
+fitdistrplus::plotdist(edata$y, histo=T, demp=T)
+summary(edata$y)
+```
+
+## Fit distribution directly 
+
+Using Omar et al.'s reported cumulative `proportion`  and `mean` time, fit distribution lines and obtain parameters. 
+
+```{r,include = FALSE}
+p <- rev(df$Prop[!is.na(df$Proportion)])
+q <- df$Days[!is.na(df$Proportion)]
+
+fit.results <- rriskFitdist.perc(p, q, show.output = FALSE)
+params <- as.numeric(get.gamma.par(p,q),show.output = FALSE, plot = FALSE)
+```
+
+```{r,echo=TRUE}
+get.gamma.par(p, q, show.output = FALSE, plot = TRUE, tol = 0.001)
+
+```
+Obtain a gamma distributed random sample of `n = 1000` and test distribution fit. 
+
+```{r,include = FALSE}
+edata.2 <- data.frame(y = rgamma(1000, shape=params[1], scale=1/params[2]))
+```
+```{r,echo=FALSE}
+fitdistrplus::plotdist(edata.2$y, histo=T, demp=T)
+summary(edata.2$y)
+```
