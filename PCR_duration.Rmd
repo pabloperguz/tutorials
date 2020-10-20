@@ -12,7 +12,7 @@ lapply(packages, require, character.only = TRUE)
 df <- read.csv("omar_data.csv")
 ```
 
-In [Eurosurveillance 2020 Jul 30; 25(30): 2001292](https://dx.doi.org/10.2807/1560-7917.ES.2020.25.30.2001292), Omar et al. analysed data of consecutive RT-qPCR results in 537 symptomatic patients with mild COVID-19 in home quarantine, between 28 February to 6 June 2020 in Rhineland-Palatinate, Germany. Table 1 presents their reported data on the population with an RT-qPCR positive for SARS-CoV-2 RNA at mean (95%CI) days after symptom onset.
+In *[Eurosurveillance 2020 Jul 30; 25(30): 2001292](https://dx.doi.org/10.2807/1560-7917.ES.2020.25.30.2001292)*, Omar et al. analysed data of consecutive RT-qPCR results in 537 symptomatic patients with mild COVID-19 in home quarantine, between 28 February to 6 June 2020 in Rhineland-Palatinate, Germany. Table 1 presents their reported data on the population with an RT-qPCR positive for SARS-CoV-2 RNA at mean (95%CI) days after symptom onset. They reported a **median time to testing negative of 20 days (IQR 16-28)**.
 
 # Table 1. Cumulative population proportions
 
@@ -21,7 +21,7 @@ df[,2:4]
 ```
 
 ## Simulated study population
-For 1000 times, at each iteration of time `t`, sample `n` random numbers from a normal distribution with mean = `mu` and sd = `sigma`, which replicates the upper and lower bounds of observed time.
+For `i in 1:1,000`, at each iteration of time `t`, sample `n` random numbers $$\ n \ = \space n^{t} \ - n^{t-1}$$ from a normal distribution with mean = `mu` and sd = `sigma`, given upper and lower bounds of observed time. 
 
 ```{r, include = FALSE}
 N <- 1000
@@ -48,7 +48,7 @@ for (i in 1:N) {
 edata <- data.frame(y = rgamma(1000, shape=mean(dist.data[,2]), rate=1/mean(dist.data[,1])))
 ```
 
-This random draw averages parameters for a gamma distribution across 1,000 simulated populations, which approximates the distribution from Omar et al. 
+At each step `i`, fit a gamma distribution by maximum likelihood, obtain its parameters and then average across all 1,000 iterations. 
 
 ```{r, echo=FALSE}
 print(c("Shape = ",mean(dist.data[,2])))
