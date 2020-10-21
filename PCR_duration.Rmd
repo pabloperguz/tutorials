@@ -7,21 +7,22 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-packages <- c("VGAM","ggplot2","rriskDistributions")
+packages <- c("VGAM","ggplot2","rriskDistributions",
+              "survival","survminer","gsci","flexsurv","stats")
 lapply(packages, require, character.only = TRUE)
 df <- read.csv("omar_data.csv")
 ```
 
 In *[Eurosurveillance 2020 Jul 30; 25(30): 2001292](https://dx.doi.org/10.2807/1560-7917.ES.2020.25.30.2001292)*, Omar et al. analysed data of consecutive RT-qPCR results in 537 symptomatic patients with mild COVID-19 in home quarantine, between 28 February to 6 June 2020 in Rhineland-Palatinate, Germany. Table 1 presents their reported data on the population with an RT-qPCR positive for SARS-CoV-2 RNA at mean (95%CI) days after symptom onset. They reported a **median time to testing negative of 20 days (IQR 16-28)**.
 
-# Table 1. Cumulative population proportions
+### Table 1. Cumulative population proportions
 
 ```{r, echo=TRUE}
 df[,2:4]
 ```
 
 ## Simulated study population
-For `i in 1:1,000`, at each iteration of time `t`, sample `n` random numbers $$\ n \ = \space n^{t} \ - n^{t-1}$$ from a normal distribution with mean = `mu` and sd = `sigma`, given upper and lower bounds of observed time. 
+For `i in 1:1,000`, at each iteration of time `t`, sample `n` random numbers $$\ n \ = \space n_{t} \ - \ n_{t-1}$$ from a normal distribution with mean = `mu` and sd = `sigma`, given upper and lower bounds of observed time.
 
 ```{r, include = FALSE}
 N <- 1000
@@ -45,7 +46,7 @@ for (i in 1:N) {
   dist.data[i,2] <- fit$estimate[2]
   rm(edata)
 }
-edata <- data.frame(y = rgamma(1000, shape=mean(dist.data[,2]), rate=1/mean(dist.data[,1])))
+edata <- data.frame(y = rgamma(100, shape=mean(dist.data[,2]), rate=1/mean(dist.data[,1])))
 ```
 
 At each step `i`, fit a gamma distribution by maximum likelihood, obtain its parameters and then average across all 1,000 iterations. 
@@ -83,3 +84,81 @@ edata.2 <- data.frame(y = rgamma(1000, shape=params[1], scale=1/params[2]))
 fitdistrplus::plotdist(edata.2$y, histo=T, demp=T)
 summary(edata.2$y)
 ```
+
+
+## Fit gamma accelerated failure time regression
+Using simulated datasets above, let's fit a gamma accelerated failure time regression model and obtain parameters. 
+```{r, include=FALSE}
+edata.surv <- Surv(edata$y)
+edata.2.surv <- Surv(edata.2$y)
+
+fit.edata <- survfit(edata.surv~1,type="kaplan-meier", conf.type="log-log")
+fit.edata.2 <- survfit(edata.2.surv~1,type="kaplan-meier", conf.type="log-log")
+```
+### Figure 1. Simulated population
+```{r}
+print(fit.edata,print.rmean=T)
+ggsurvplot(fit.edata,data=edata,
+           palette="lancet",
+           ggtheme=theme_bw(),
+           surv.median.line="hv",
+           legend.title="Time to SARS-CoV-2 negative",
+           legend.labs="",xlab="Days since symptoms onset",
+           ylab="Probability still positive")
+fit.gamma.edata <- flexsurvreg(edata.surv~1, dist="gamma")
+fit.gamma.edata
+```
+### Figure 2. Direct fit
+```{r}
+print(fit.edata.2,print.rmean=T)
+ggsurvplot(fit.edata.2,data=edata.2,
+           palette="lancet",
+           ggtheme=theme_bw(),
+           surv.median.line="hv",
+           legend.title="Time to SARS-CoV-2 negative",
+           legend.labs="",xlab="Days since symptoms onset",
+           ylab="Probability still positive")
+fit.gamma.edata.2 <- flexsurvreg(edata.2.surv~1, dist="gamma")
+fit.gamma.edata.2
+```
+
+## Fit Erlang distribution 
+
+From the gamma accelerated failure function fitted to simulated data `edata`, extract the cumulative distribution function `ccdf_pcr` parameters over a sequence of survival probability of length 21 (*e.g. 0, 0.05, 0.10, ... 0.95, 0.99*). That is, the likelihood of remaining positive over scaled (*dd*) observation time. Also extract ovrall mean, median and IQR of progression duration time. 
+
+CCDF data is then used to fit a scaled Erlang distribution, which is then re-scaled (just `gamma`) to actual time using overall mean.
+
+```{r}
+
+# Obtain ccdf of PCR positivity
+q <- seq(0, 100, l = 21)
+df.edata <- data.frame(x = fit.edata$surv,y = fit.edata$cumhaz, z = fit.edata$time)
+ccdf_pcr <- data.frame()
+for (i in 1:21) {
+  x = q[i+1]
+  ccdf_pcr[1,i] <- df.edata$y[x]
+}
+ccdf_pcr <- cbind(0,ccdf_pcr)
+ccdf_pcr <- ccdf_pcr[,1:21]
+rownames(ccdf_pcr) <- "pcr positive"
+
+# obtain mean, median and IQR of progression durations
+progression_durations <- data.frame(param = "m_Com",
+                                    Q2.5 = mean(df.edata$z[2],df.edata$z[3]),
+                                    Q50 = df.edata$z[50],
+                                    Q97.5 = mean(df.edata$z[97],df.edata$z[98]),
+                                    mean = mean(df.edata$z))
+
+# pass parameters on to Lilith's functions
+source("fit_Erlang.R") ## this is kept offline
+
+# Print outputs
+op_res # scaled Erlang parameters (time in dd)
+scaled_gamma # re-scaled gamma (true time)
+
+
+```
+
+
+
+
