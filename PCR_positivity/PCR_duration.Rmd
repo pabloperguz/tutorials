@@ -46,7 +46,7 @@ for (i in 1:N) {
   dist.data[i,2] <- fit$estimate[2]
   rm(edata)
 }
-edata <- data.frame(y = rgamma(100, shape=mean(dist.data[,2]), rate=1/mean(dist.data[,1])))
+edata <- data.frame(y = rgamma(100,shape=mean(dist.data[,2]),rate=1/mean(dist.data[,1])))
 ```
 
 At each step `i`, fit a gamma distribution by maximum likelihood, obtain its parameters and then average across all 1,000 iterations. 

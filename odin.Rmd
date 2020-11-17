@@ -1,0 +1,44 @@
+---
+title: "odin"
+author: "Pablo Perez"
+date: "30/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Rich's odin vignette
+
+`odin` implements a high-level language for describing and implementing ordinary differential equations in R. It provides a "domain specific language" (DSL) which looks like R but is compiled directly to C. The actual solution of the differential equations is done with the `deSolve` package.
+
+This example is the Lorenz attractor implemented in `odin`, which's main purpose is to simplify the transition from R to C language. This way, ODE models can be written and solved quickly.  
+
+
+```{r}
+lorenz <- odin::odin({
+  ## Derivatives
+  deriv(y1) <- sigma * (y2 - y1)
+  deriv(y2) <- R * y1 - y2 - y1 * y3
+  deriv(y3) <- -b * y3 + y1 * y2
+
+  ## Initial conditions
+  initial(y1) <- 10.0
+  initial(y2) <- 1.0
+  initial(y3) <- 1.0
+
+  ## parameters
+  sigma <- 10.0
+  R     <- 28.0
+  b     <-  8.0 / 3.0
+})
+
+mod <- lorenz()
+t <- seq(0, 100, length.out = 50000)
+y <- mod$run(t)
+```
+
+## Including Plots
+
+

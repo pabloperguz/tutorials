@@ -1,0 +1,204 @@
+\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provides euro and other symbols
+\else % if luatex or xelatex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage[]{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\usepackage{hyperref}
+\hypersetup{
+            pdftitle={Chapter 3 - R0},
+            pdfauthor={Pablo Perez},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+
+\title{Chapter 3 - R0}
+\author{Pablo Perez}
+\date{30/10/2020}
+
+\begin{document}
+\maketitle
+
+\hypertarget{estimating-r0-from-a-simple-epidemic}{%
+\subsection{Estimating R0 from a simple
+epidemic}\label{estimating-r0-from-a-simple-epidemic}}
+
+For free-living organisms, the rate of exponential growth \texttt{r}
+given generation time \texttt{G} can be calculated as follows
+\[r = log(R_0) / G\] \[R_0 = exp(rG)\]
+
+Since an exponentially growing population grows as a rate
+\[N(t) = N(0)exp(rt)\] the time for it to double will be \[log(2)/r\]
+
+For pathogens, \texttt{N} would represent disease prevalence and
+\texttt{G} the serial interval (i.e.~time between successive cases in a
+chain of transmission). Since infectious disease data often is in the
+form of \emph{incidence},
+\[r = log(cumulative_incidence)\]\[R_0 = Vr + 1\]
+
+\hypertarget{example-2003-niamey-measles-outbreak}{%
+\subsubsection{Example: 2003 Niamey measles
+outbreak}\label{example-2003-niamey-measles-outbreak}}
+
+\includegraphics{Chp3_R0_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+Data in this example is weekly and for measles the serial interval is 10
+to 12 days. \texttt{R\_0} can thus be calculated assuming a \texttt{V}
+of 1.5 or 1.8.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fit=}\KeywordTok{lm}\NormalTok{(}\KeywordTok{log}\NormalTok{(cum_cases)}\OperatorTok{~}\NormalTok{absweek, }\DataTypeTok{subset=}\NormalTok{absweek}\OperatorTok{<}\DecValTok{7}\NormalTok{,}
+       \DataTypeTok{data=}\NormalTok{niamey)}
+\NormalTok{r=fit}\OperatorTok{$}\NormalTok{coef[}\StringTok{"absweek"}\NormalTok{]}
+\NormalTok{V=}\KeywordTok{c}\NormalTok{(}\FloatTok{1.5}\NormalTok{, }\FloatTok{1.8}\NormalTok{)}
+\NormalTok{V}\OperatorTok{*}\NormalTok{r}\OperatorTok{+}\DecValTok{1}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.694233 1.833080
+\end{verbatim}
+
+The above estimate of \texttt{R\_0} between 1.5 and 2.0 really
+represents \texttt{R\_E}, the \emph{effective} reproductive number at
+the start of a measles outbreak in a population with a background level
+of vaccination.
+
+This estimate can be refined by futher acounting for the ration of
+infectious period to serial interval \texttt{f}
+\[R = Vr + 1 + f(1-f)(Vr)^2\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{V =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\FloatTok{1.5}\NormalTok{, }\FloatTok{1.8}\NormalTok{)}
+\NormalTok{f =}\StringTok{ }\NormalTok{(}\DecValTok{5}\OperatorTok{/}\DecValTok{7}\NormalTok{)}\OperatorTok{/}\NormalTok{V}
+\NormalTok{V }\OperatorTok{*}\StringTok{ }\NormalTok{r }\OperatorTok{+}\StringTok{ }\DecValTok{1} \OperatorTok{+}\StringTok{ }\NormalTok{f }\OperatorTok{*}\StringTok{ }\NormalTok{(}\DecValTok{1} \OperatorTok{-}\StringTok{ }\NormalTok{f) }\OperatorTok{*}\StringTok{ }\NormalTok{(V }\OperatorTok{*}\StringTok{ }\NormalTok{r)}\OperatorTok{^}\DecValTok{2}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.814450 1.999198
+\end{verbatim}
+
+Whilst these simple calculations of \texttt{R\_0} based on initial
+growth are handy, they're not very rigorous as they rely on only a
+fraction of the data.
+
+\hypertarget{maximum-likelihood-the-chain-binomial-model}{%
+\subsection{Maximum likelihood: the chain-binomial
+model}\label{maximum-likelihood-the-chain-binomial-model}}
+
+In contrast to the continuous-time, deterministic, basic-chain SIR model
+from chapter 2, the \textbf{chain-binomial model} assumes that an
+epidemic arises from a succession of discrete generations of infectious
+individuals in a \emph{coin-flip} fashion given a force of infection
+\[\beta\ I/N\]
+
+The negative for the above expression will thus be the probability that
+a \emph{susceptible} individual escapes infection at time \texttt{t}.
+The number of events in \texttt{∆t} will follow a Poisson distribution
+(\texttt{x∆t}). Assuming that a) contacts happen at random and b) the
+serial interval is the basic unit of time \texttt{t}
+\[I_{t+1} ~ Binomial(S_t, 1 - exp(-\beta\ I_t / N)\]
+\[S_{t+1} = S_t - I_{t+1} = S_0 - \sum_{i=1}^t I_i\] where
+\texttt{\textbackslash{}beta} approximates to the reproductive ration at
+the start of the epidemic. Assuming \emph{conditional independence}
+(i.e.~each epidemic generation depends only on the state of the system
+in the previous time step), the removal method can estimate
+\texttt{\textbackslash{}beta} and \texttt{S\_0} from a sequence of
+binomial likelihoods.
+
+\end{document}

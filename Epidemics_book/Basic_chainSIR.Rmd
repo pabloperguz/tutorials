@@ -1,20 +1,26 @@
 ---
 title: "Building a basic chain-SIR model"
 author: "Pablo Perez"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "18/10/2020"
 output: html_document
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+packages <- c("deSolve","ggplot2","gsci","stats")
+lapply(packages, require, character.only = TRUE)
+```
+
 
 A chain-SIR model can simulate S→I→R flows with 'realistic'
-infectious period distributions (u), where:
-    k(t −τ ) is the number of individuals infected τ time units ago,
-    h(τ ) is the probability of recovering on infection-day τ , and
-    H(τ ) is the cumulative probability of having recovered by infection-day τ
+infectious period distributions `u`, where:
+    `k(t −τ)` is the number of individuals infected τ time units ago,
+    `h(τ)` is the probability of recovering on infection-day τ , and
+    `H(τ)` is the cumulative probability of having recovered by infection-day τ
 
-k(t −τ )/(1−H(τ )) thus represents the fraction of individuals infected
-at time t−τ that still remains in the infected class on day t and the integral is 
+$$k(t −τ )/(1−H(τ ))$$ thus represents the fraction of individuals infected
+at time `t−τ` that still remain in the infected class on day `t` and the integral is 
 over all previous infections so as to quantify the total flux into the removed 
-class at time t.
+class at time `t`.
 
 
 ```{r}
@@ -44,28 +50,28 @@ paras2 = c(mu = 1/75, N = 1, beta = 625,
            gamma = 365/14, u=1)
 xstart2 = log(c(S=.06, I=c(0.001, rep(0.0001,
                                       paras2["u"]-1)), R = 0.0001))
-out = as.data.frame(deSolve::ode(xstart2, times, chainSIR,
+out = as.data.frame(ode(xstart2, times, chainSIR,
                         paras2))
 plot(times, exp(out[,3]), ylab="Infected", xlab=
        "Time", ylim=c(0, 0.01), type="l")
 paras2["u"] =2
 xstart2 = log(c(S=.06, I=c(0.001, rep(0.0001/
                                         paras2["u"], paras2["u"]-1)), R = 0.0001))
-out2 = as.data.frame(deSolve::ode(xstart2, times, chainSIR,
+out2 = as.data.frame(ode(xstart2, times, chainSIR,
                          paras2))
 lines(times, apply(exp(out2[,-c(1:2,length(out2))]),
                    1 ,sum), col="blue")
 paras2["u"] =73
 xstart2 = log(c(S=.06, I=c(0.001, rep(0.0001/
                                         paras2["u"], paras2["u"]-1)), R = 0.0001))
-out3 = as.data.frame(deSolve::ode(xstart2, times, chainSIR,
+out3 = as.data.frame(ode(xstart2, times, chainSIR,
                          paras2))
 lines(times, apply(exp(out3[,-c(1:2,length(out3))]),
                    1, sum), col="red", lwd=2, lty=2)
 paras2["u"] =500
 xstart2 = log(c(S=.06, I=c(0.001, rep(0.0001/
                                         paras2["u"], paras2["u"]-1)), R = 0.0001))
-out4 = as.data.frame(deSolve::ode(xstart2, times, chainSIR,
+out4 = as.data.frame(ode(xstart2, times, chainSIR,
                          paras2))
 lines(times, apply(exp(out4[,-c(1:2,length(out4))]),
                    1,sum, na.rm=TRUE), col="green")

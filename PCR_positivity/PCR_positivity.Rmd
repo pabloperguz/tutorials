@@ -1,0 +1,95 @@
+---
+title: "PCR_positivity"
+author: "ncov-RTM Imperial College London"
+date: "27/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, include=FALSE}
+packages <- c("VGAM","ggplot2","rriskDistributions",
+              "survival","survminer","gsci","flexsurv","stats")
+lapply(packages, require, character.only = TRUE)
+df <- read.csv("omar_data.csv")
+df <- df[,1:4]
+df <- subset(df,!is.na(Days))
+```
+
+# Time from symptom onset to PCR negative
+
+In *[Eurosurveillance 2020 Jul 30; 25(30): 2001292](https://dx.doi.org/10.2807/1560-7917.ES.2020.25.30.2001292)*, Omar et al. analysed data of consecutive RT-qPCR results in 537 symptomatic patients with mild COVID-19 in home quarantine, between 28 February to 6 June 2020 in Rhineland-Palatinate, Germany. Table 1 presents their reported data on the population with an RT-qPCR positive for SARS-CoV-2 RNA at mean (95%CI) days after symptom onset. They reported a **median time to testing negative of 20 days (IQR 16-28)**.
+
+### Table 1. Cumulative population proportions, from *[Omar et al.](https://dx.doi.org/10.2807/1560-7917.ES.2020.25.30.2001292)*
+
+```{r, echo=FALSE}
+df
+```
+
+Using Omar et al.'s reported cumulative `proportion`  and `mean` time, we fitted a gamma accelerated failure time regression line. 
+
+```{r,include = FALSE}
+# fit parameters directly
+p <- rev(df$Prop[!is.na(df$Proportion)])
+q <- df$Days[!is.na(df$Proportion)]
+
+fit.results <- rriskFitdist.perc(p, q, show.output = FALSE)
+params <- as.numeric(get.gamma.par(p,q),show.output = FALSE, plot = FALSE)
+edata <- data.frame(y = rgamma(1000, shape=params[1], scale=1/params[2]))
+
+# Fit gamma-accelerated failure time model
+edata.surv <- Surv(edata$y)
+fit.edata <- survfit(edata.surv~1,type="kaplan-meier", conf.type="log-log")
+
+```
+```{r, echo=FALSE}
+print(fit.edata,print.rmean=T)
+ggsurvplot(fit.edata,data=edata,
+           palette="lancet",
+           ggtheme=theme_bw(),
+           surv.median.line="hv",
+           legend.title="Time to SARS-CoV-2 negative",
+           legend.labs="",xlab="Days since symptoms onset",
+           ylab="Probability still positive")
+fit.gamma.edata <- flexsurvreg(edata.surv~1, dist="gamma")
+fit.gamma.edata
+```
+
+## Fit Erlang distribution 
+
+From the gamma accelerated failure function, we extract the cumulative distribution function over a sequence of survival probability of length 21 (*e.g. 0, 0.05, 0.10, ... 0.95, 0.99*). That is, the likelihood of remaining **PCR positive over scaled observation time** (*dd*) and the mean, median and IQR of progression duration time (unscaled). 
+
+We used these data to fit an *Erlang* (`k,y`) distribution of time from symptom onset to PCR negativity, by minimizing the Kullback-Leibler divergence. 
+
+```{r, echo = FALSE}
+# Obtain ccdf of PCR positivity
+q <- seq(0, 1000, l = 21)
+df.edata <- data.frame(x = fit.edata$surv, y = fit.edata$cumhaz, 
+                       z = fit.edata$time)
+ccdf_pcr <- data.frame()
+for (i in 1:21) {
+  if (i == 1){out = 0}
+  else if (i>1){
+    x = q[i]
+    out = df.edata$y[x]
+  }
+  ccdf_pcr[1,i] <- out
+}
+rownames(ccdf_pcr) <- "pcr_pos"
+
+# obtain mean, median and IQR of progression durations
+progression_durations <- data.frame(param = "m_PosNeg",
+                                    Q2.5 = df.edata$z[25],
+                                    Q50 = df.edata$z[500],
+                                    Q97.5 = df.edata$z[974],
+                                    mean = mean(df.edata$z))
+
+# pass parameters on to Lilith's functions
+source("fit_Erlang.R") ## this is kept offline
+```
+```{r,}
+op_res # scaled Erlang parameters (time in dd)
+scaled_gamma # re-scaled gamma over mean duration (true time)
+progression_durations$mean # mean duration
+```

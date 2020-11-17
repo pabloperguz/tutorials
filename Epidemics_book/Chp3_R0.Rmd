@@ -1,0 +1,155 @@
+---
+title: "Chapter 3 - R0"
+author: "Pablo Perez"
+date: "30/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+packages <- c("deSolve","ggplot2","ggsci","stats","epimdr","bbmle")
+lapply(packages, require, character.only = TRUE)
+```
+
+## Estimating R0 from a simple epidemic 
+For free-living organisms, the rate of exponential growth `r` given generation time `G` can be calculated as follows 
+$$r = log(R_0) / G$$
+$$R_0 = exp(rG)$$
+
+Since an exponentially growing population grows as a rate $$N(t) = N(0)exp(rt)$$
+the time for it to double will be $$log(2)/r$$
+
+For pathogens, `N` would represent disease prevalence and `G` the serial interval (i.e. time between successive cases in a chain of transmission). Since infectious disease data often is in the form of *incidence*, 
+$$r = log(cumulative_incidence)$$$$R_0 = Vr + 1$$
+
+
+### Example: 2003 Niamey measles outbreak 
+
+```{r, echo = FALSE, fig.width=3, fig.height=3}
+par(mar = c(5,5,2,5))
+plot(niamey$absweek, niamey$tot_cases, type="b",
+     xlab="Week", ylab="Incidence",main="Initial period of exponential growth")
+par(new=T)
+plot(niamey$absweek, niamey$cum_cases, type="l",col="red", 
+     axes=FALSE, xlab=NA, ylab=NA, log="y")
+axis(side = 4)
+mtext(side = 4, line = 4, "Cumulative incidence")
+legend("topleft", legend=c("Cases", "Cumulative"),lty=c(1,1), 
+       pch=c(1,NA), col=c("black", "red"))
+```
+
+Data in this example is weekly and for measles the serial interval is 10 to 12 days. `R_0` can thus be calculated assuming a `V` of 1.5 or 1.8. 
+
+```{r, echo=TRUE}
+fit=lm(log(cum_cases)~absweek, subset=absweek<7,
+       data=niamey)
+r=fit$coef["absweek"]
+V=c(1.5, 1.8)
+V*r+1
+```
+
+The above estimate of `R_0` between 1.5 and 2.0 really represents `R_E`, the *effective* reproductive number at the start of a measles outbreak in a population with a background level of vaccination. 
+
+This estimate can be refined by futher acounting for the ration of infectious period to serial interval `f`
+$$R = Vr + 1 + f(1-f)(Vr)^2$$
+
+```{r, echo=TRUE}
+V = c(1.5, 1.8)
+f = (5/7)/V
+V * r + 1 + f * (1 - f) * (V * r)^2
+```
+
+Whilst these simple calculations of `R_0` based on initial growth are handy, they're not very rigorous as they rely on only a fraction of the data. 
+
+
+## Maximum likelihood: the chain-binomial model
+In contrast to the continuous-time, deterministic, basic-chain SIR model from chapter 2, the **chain-binomial model** assumes that an epidemic arises from a succession of discrete generations of infectious individuals in a *coin-flip* fashion given a force of infection $$\beta\ I/N$$
+
+The negative for the above expression will thus be the probability that a *susceptible* individual escapes infection at time `t`. The number of events in `∆t` will follow a Poisson distribution (`x∆t`). Assuming that a) contacts happen at random and b) the serial interval is the basic unit of time `t` 
+$$I_{t+1} ~ Binomial(S_t, 1 - exp(-\beta\ I_t / N)$$
+$$S_{t+1} = S_t - I_{t+1} = S_0 - \sum_{i=1}^t I_i$$
+where `\beta` approximates to the reproductive ration at the start of the epidemic. Assuming *conditional independence* (i.e. each epidemic generation depends only on the state of the system in the previous time step), the removal method can estimate `\beta` and `S_0` from a sequence of binomial likelihoods. 
+
+The first step is to write a function for the likelihood `dbinom`, which will return the log-likelihood of observing the data given the model
+
+```{r, echo=TRUE}
+llik.cb = function(S0, beta, I) {
+n = length(I)
+S = floor(S0 - cumsum(I[-n]))
+p = 1 - exp(-beta * (I[-n])/S0)
+L = -sum(dbinom(I[-1], S, p, log = TRUE))
+return(L)
+}
+```
+
+Using the Niamey data, let's first aggregate cases in two-week intervals (i.e. roguhly the serial interval for measles). Candidate values for `S_0` and `\beta` need to be provided. `S_0` should be at least the number of actual cases in an epidemic (`sum(y)`). Then the negative log-likelihood for each candidate value of `\beta` between 1 and 10 by 0.1 is calculated and plotted.
+
+```{r, echo=TRUE}
+twoweek = rep(1:15, each = 2)
+y = sapply(split(niamey$cases_1[1:30], twoweek), sum)
+sum(y)
+S0cand=6500
+betacand=seq(0,10, by=.1)
+ll=rep(NA, length(betacand))
+for(i in 1:length(betacand)){
+ll[i]=llik.cb(S0=S0cand, beta=betacand[i], I=y)
+}
+plot(ll~betacand, ylab="Neg log-lik", xlab=expression(beta))
+betacand[which.min(ll)]
+```
+
+Similarly, we can guess `\beta` should be around 2.3 and we can cross-check this proposed valua against a plaussible range for `S_0`. The value obtained for `S_0` (7,084.8) then tells us our guess is good, but imperfect. 
+```{r, echo=TRUE}
+betacand=2.3
+S0cand=seq(5920,8000, length=101)
+ll=rep(NA, length=101)
+for(i in 1:101){
+ll[i]=llik.cb(S0=S0cand[i], beta=betacand, I=y)
+}
+plot(ll~S0cand, ylab="Neg log-lik", xlab=
+expression(S[0]))
+S0cand[which.min(ll)]
+```
+
+Using the `mle2` function from the `bbmle` package, both parameters can be varied at the same time for an estimate obtained by **maximum likelihood**. Again, this yields imperfect results, but it highlights uncertainty given parameter interdependencies. The latter can be quantified as a **variance-covariance** matrix. Note the strong negative correlation between parameters here.
+
+```{r, echo=TRUE}
+require(bbmle)
+fit=mle2(llik.cb, start=list(S0=7085, beta=2.3),
+method="Nelder-Mead",data = list(I = y))
+summary(fit)
+cov2cor(vcov(fit))
+```
+
+## Stochastic simulation
+
+Building on the statistical part of the chain-binomial model, we can write a stochastic function for simulating dynamics given estimated parameters.
+
+```{r, echo=FALSE}
+sim.cb=function(S0, beta, I0){
+  I=I0
+  S=S0
+  i=1
+  while(!any(I==0)){
+    i=i+1
+    I[i]=rbinom(1, size=S[i-1], prob=1-
+                  exp(-beta*I[i-1]/S0))
+    S[i]=S[i-1]-I[i]
+  }
+  out=data.frame(S=S, I=I)
+  return(out)
+}
+```
+
+Here, 100 simulations are superimposed on the observed epidemic. Note how the model gives a good approximation.
+```{r, echo= TRUE}
+plot(y, type="n", xlim=c(1,18),
+     ylab="Predicted/observed", xlab="Week")
+
+for(i in 1:100){
+  sim=sim.cb(S0=floor(coef(fit)["S0"]),
+             beta=coef(fit)["beta"], I0=11)
+  lines(sim$I, col=grey(.5))
+}
+points(y, type="b", col=2)
+```
