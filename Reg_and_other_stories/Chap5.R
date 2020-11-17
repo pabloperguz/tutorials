@@ -1,4 +1,5 @@
-
+packages <- c("ggplot2","ggsci")
+lapply(packages, require, character.only = TRUE)
 # chapter 5, exercises (section 5.7 pag 76) 
 
 ### ---- 5.1 Discrete probability simulation ----
