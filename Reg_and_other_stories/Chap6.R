@@ -20,6 +20,8 @@ y <- a + b*x + sigma*rnorm(n) # simple linear model
 fake <- data.frame(x, y)
 fit.1 <- stan_glm(y ~ x, data = fake)  # stan fit generalised linear model
 print(fit.1, digits = 2)
+plot(fit.1)
+
 plot(fake$x, fake$y, main = "Data and fitted regression line")
 a_hat <- coef(fit.1)[1]
 b_hat <- coef(fit.1)[2]
@@ -74,7 +76,7 @@ simple_linear <- function(a, b, n, sigma, to.return){
 
 ex.6.3 <- simple_linear(20, 1.2, 1000, 0.5, "df")
 
-seq.n <- seq(0, 500, by=10)
+seq.n <- seq(0, 500, by=5)
 seq.n <- seq.n[-1]
 ex.6.4 <- matrix(NA,nrow = length(seq.n),ncol = 4)
 for (i in seq_along(seq.n)) {
